@@ -11,8 +11,6 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 NEW_RELIC_API_KEY = os.getenv("NEW_RELIC_API_KEY")
 GRAPHQL_URL = "https://api.newrelic.com/graphql"
-
-# Microsoft Graph API URL
 GRAPH_API_BASE = "https://graph.microsoft.com/v1.0"
 
 def get_graph_api_token():
