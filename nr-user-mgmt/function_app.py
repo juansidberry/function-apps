@@ -8,7 +8,7 @@ from msal import ConfidentialClientApplication
 # Environment variables (Set these in Azure Function App Configuration)
 TENANT_ID = os.getenv("TENANT_ID")
 CLIENT_ID = os.getenv("CLIENT_ID")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+CLIENT_SECRET = os.getenv("NR_AZ_CLIENT_SECRET")
 NEW_RELIC_API_KEY = os.getenv("NEW_RELIC_API_KEY")
 GRAPHQL_URL = "https://api.newrelic.com/graphql"
 GRAPH_API_BASE = "https://graph.microsoft.com/v1.0"
