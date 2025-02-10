@@ -38,15 +38,19 @@ def get_user_email(user_id, access_token):
     else:
         logging.error(f"Failed to get user email: {response.text}")
         return None
+    
 
-def remove_user_from_new_relic(email):
-    """GraphQL mutation to remove the user from New Relic"""
+def get_new_relic_user_id(email):
+    """Query New Relic to get user ID using their email"""
     query = """
-    mutation {
-      userManagementDeleteUser(email: "%s") {
-        success
-        error {
-          message
+    {
+      actor {
+        user {
+          userSearch(query: {scope: {email: %s}}) {
+            users {
+              userId
+            }
+          }
         }
       }
     }
@@ -59,18 +63,45 @@ def remove_user_from_new_relic(email):
     
     response = requests.post(GRAPHQL_URL, json={"query": query}, headers=headers)
     data = response.json()
-    
+
     if "errors" in data:
-        logging.error(f"GraphQL Error: {data['errors']}")
+        logging.error(f"GraphQL Error (user lookup): {data['errors']}")
+        return None
+    else:
+        users = data.get("data", {}).get("actor", {}).get("users", {}).get("userSearch", {}).get("users", [])
+        if users:
+            return users[0]["id"]  # Assuming only one user matches the email
+        else:
+            logging.warning(f"No user found in New Relic for email: {email}")
+            return None
+        
+
+def remove_user_from_new_relic(user_id):
+    """GraphQL mutation to remove the user from New Relic"""
+    query = """
+    mutation {
+      userManagementDeleteUser(deleteUserOptions: {id: "%s"}) {
+        deletedUser {
+          id
+        }
+      }
+    }
+    """ % user_id
+
+    headers = {
+        "Content-Type": "application/json",
+        "API-Key": NEW_RELIC_API_KEY
+    }
+    
+    response = requests.post(GRAPHQL_URL, json={"query": query}, headers=headers)
+    data = response.json()
+
+    if "errors" in data:
+        logging.error(f"GraphQL Error (delete user): {data['errors']}")
         return False
     else:
-        result = data.get("data", {}).get("userManagementDeleteUser", {})
-        if result.get("success"):
-            logging.info(f"User {email} successfully removed from New Relic.")
-            return True
-        else:
-            logging.error(f"Failed to remove user: {result.get('error', {}).get('message', 'Unknown error')}")
-            return False
+        logging.info(f"User {user_id} successfully removed from New Relic.")
+        return True
 
 def main(event: func.EventGridEvent):
     """Azure Function triggered when a user is removed from the 'New Relic SSO' group"""
@@ -93,8 +124,13 @@ def main(event: func.EventGridEvent):
     if not email:
         return func.HttpResponse("Failed to fetch user email", status_code=500)
 
+    # Get New Relic user ID
+    new_relic_user_id = get_new_relic_user_id(email)
+    if not new_relic_user_id:
+        return func.HttpResponse(f"User {email} not found in New Relic.", status_code=404)
+
     # Remove the user from New Relic
-    if remove_user_from_new_relic(email):
-        return func.HttpResponse(f"User {email} removed from New Relic.", status_code=200)
+    if remove_user_from_new_relic(new_relic_user_id):
+        return func.HttpResponse(f"User {email} (ID: {new_relic_user_id}) removed from New Relic.", status_code=200)
     else:
         return func.HttpResponse(f"Failed to remove user {email} from New Relic.", status_code=500)
