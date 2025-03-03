@@ -103,7 +103,7 @@ def remove_user_from_new_relic(user_id):
         logging.info(f"User {user_id} successfully removed from New Relic.")
         return True
 
-def main(event: func.EventGridEvent):
+def main(event: func.eventGridTrigger) -> None:
     """Azure Function triggered when a user is removed from the 'New Relic SSO' group"""
     logging.info("Received event: %s", event.get_json())
     
