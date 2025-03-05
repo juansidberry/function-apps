@@ -7,10 +7,10 @@ def main(event: func.EventGridEvent):
     logging.info("Received Event Grid event: %s", event.get_json())
     
     # Extract data from the event
-    data = event.get_json()
-    event_type = data.get("eventType", "")
+    data              = event.get_json()
+    event_type        = data.get("eventType", "")
     user_display_name = data.get("subject", "Unknown User").split("/")[-1]  # Extract user name from subject
-    group_name = data.get("data", {}).get("groupName", "")
+    group_name        = data.get("data", {}).get("groupName", "")
     
     # Check if the event is related to 'NrSSO' security group
     if group_name == "NrSSO":
